@@ -17,8 +17,8 @@
                 <th style="padding: 10px; text-align: left;">Age</th>
                 <th style="padding: 10px; text-align: left;">Weight</th>
                 <th style="padding: 10px; text-align: left;">Program</th>
-                <th style="padding: 10px; text-align: left;">Adherence</th>
                 <th style="padding: 10px; text-align: left;">Calories</th>
+                <th style="padding: 10px; text-align: left;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -27,17 +27,15 @@
                 <td style="padding: 10px;">{{ client.name }}</td>
                 <td style="padding: 10px;">{{ client.age or '-' }}</td>
                 <td style="padding: 10px;">{{ client.weight or '-' }} kg</td>
-                <td style="padding: 10px;">{{ client.program_name }}</td>
-                <td style="padding: 10px;">{{ client.adherence }}%</td>
-                <td style="padding: 10px;">{{ client.calories }} kcal</td>
+                <td style="padding: 10px;">{{ programs[client.program].name if client.program in programs else client.program }}</td>
+                <td style="padding: 10px;">{{ client.calories or '-' }} kcal</td>
+                <td style="padding: 10px;"><a href="/client/{{ client.name }}" class="btn" style="padding: 5px 10px;">View</a></td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
 {% else %}
-<div class="card">
-    <p>No clients registered yet.</p>
-</div>
+<div class="card"><p>No clients registered yet.</p></div>
 {% endif %}
 {% endblock %}

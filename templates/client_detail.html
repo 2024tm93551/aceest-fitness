@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}{{ client.name }} - ACEest Fitness{% endblock %}
+{% block content %}
+<h2 style="margin-bottom: 20px;">Client: {{ client.name }}</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="card" style="border-left-color: {% if category == 'error' %}#e74c3c{% else %}#2ecc71{% endif %};">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<div class="card">
+    <h3>Profile</h3>
+    <p><strong>Age:</strong> {{ client.age or '-' }}</p>
+    <p><strong>Weight:</strong> {{ client.weight or '-' }} kg</p>
+    <p><strong>Program:</strong> {{ programs[client.program].name if client.program in programs else client.program }}</p>
+    <p><strong>Daily Calories:</strong> {{ client.calories or '-' }} kcal</p>
+</div>
+
+<div class="card">
+    <h3>Log Weekly Progress</h3>
+    <form method="POST" action="/progress/{{ client.name }}">
+        <label>Adherence (%):</label><br>
+        <input type="range" name="adherence" min="0" max="100" value="0" id="adherence" style="width: 100%; max-width: 300px;">
+        <span id="adherence-value">0%</span><br><br>
+        <button type="submit" class="btn">Save Progress</button>
+    </form>
+</div>
+
+<a href="/clients" class="btn" style="background-color: #555; color: #fff;">Back to Clients</a>
+
+<script>
+document.getElementById('adherence').addEventListener('input', function() {
+    document.getElementById('adherence-value').textContent = this.value + '%';
+});
+</script>
+{% endblock %}

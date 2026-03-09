@@ -1,9 +1,11 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, Response
+from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, Response, g
+import sqlite3
 import csv
 import io
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'aceest-fitness-secret-key'
+DATABASE = 'aceest_fitness.db'
 
 # Program Data
 PROGRAMS = {
@@ -71,8 +73,43 @@ GYM_METRICS = {
     "break_even_members": 250
 }
 
-# In-memory client storage
-clients = []
+
+def get_db():
+    if 'db' not in g:
+        g.db = sqlite3.connect(DATABASE)
+        g.db.row_factory = sqlite3.Row
+    return g.db
+
+
+@app.teardown_appcontext
+def close_db(exception):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
+
+
+def init_db():
+    with app.app_context():
+        db = get_db()
+        db.execute('''
+            CREATE TABLE IF NOT EXISTS clients (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE,
+                age INTEGER,
+                weight REAL,
+                program TEXT,
+                calories INTEGER
+            )
+        ''')
+        db.execute('''
+            CREATE TABLE IF NOT EXISTS progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                client_name TEXT,
+                week TEXT,
+                adherence INTEGER
+            )
+        ''')
+        db.commit()
 
 
 @app.route('/')
@@ -100,7 +137,6 @@ def client_profile():
         age = request.form.get('age', type=int)
         weight = request.form.get('weight', type=float)
         program_id = request.form.get('program')
-        adherence = request.form.get('adherence', type=int, default=0)
         
         if not name or not program_id:
             flash('Name and Program are required', 'error')
@@ -109,45 +145,54 @@ def client_profile():
         factor = PROGRAMS.get(program_id, {}).get('factor', 25)
         calories = int(weight * factor) if weight else 0
         
-        client = {
-            'name': name,
-            'age': age,
-            'weight': weight,
-            'program': program_id,
-            'program_name': PROGRAMS[program_id]['name'],
-            'adherence': adherence,
-            'calories': calories
-        }
-        clients.append(client)
-        flash(f'Client {name} saved successfully! Adherence: {adherence}%', 'success')
+        db = get_db()
+        try:
+            db.execute('''
+                INSERT OR REPLACE INTO clients (name, age, weight, program, calories)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (name, age, weight, program_id, calories))
+            db.commit()
+            flash(f'Client {name} saved successfully!', 'success')
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'error')
+        
         return redirect(url_for('client_profile'))
     
     return render_template('client.html', programs=PROGRAMS)
 
 
+@app.route('/client/<name>')
+def get_client(name):
+    db = get_db()
+    client = db.execute('SELECT * FROM clients WHERE name = ?', (name,)).fetchone()
+    if not client:
+        flash('Client not found', 'error')
+        return redirect(url_for('clients_list'))
+    return render_template('client_detail.html', client=dict(client), programs=PROGRAMS)
+
+
 @app.route('/clients')
 def clients_list():
-    return render_template('clients.html', clients=clients, programs=PROGRAMS)
+    db = get_db()
+    clients = db.execute('SELECT * FROM clients ORDER BY name').fetchall()
+    return render_template('clients.html', clients=[dict(c) for c in clients], programs=PROGRAMS)
 
 
 @app.route('/clients/export')
 def export_clients_csv():
+    db = get_db()
+    clients = db.execute('SELECT * FROM clients').fetchall()
+    
     if not clients:
         flash('No clients to export', 'error')
         return redirect(url_for('clients_list'))
     
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(['Name', 'Age', 'Weight', 'Program', 'Adherence', 'Calories'])
+    writer.writerow(['Name', 'Age', 'Weight', 'Program', 'Calories'])
     for client in clients:
-        writer.writerow([
-            client['name'],
-            client['age'],
-            client['weight'],
-            client['program_name'],
-            client['adherence'],
-            client['calories']
-        ])
+        prog_name = PROGRAMS.get(client['program'], {}).get('name', client['program'])
+        writer.writerow([client['name'], client['age'], client['weight'], prog_name, client['calories']])
     
     output.seek(0)
     return Response(
@@ -155,6 +200,22 @@ def export_clients_csv():
         mimetype='text/csv',
         headers={'Content-Disposition': 'attachment; filename=clients.csv'}
     )
+
+
+@app.route('/progress/<name>', methods=['POST'])
+def save_progress(name):
+    from datetime import datetime
+    adherence = request.form.get('adherence', type=int, default=0)
+    week = datetime.now().strftime("Week %U - %Y")
+    
+    db = get_db()
+    db.execute('''
+        INSERT INTO progress (client_name, week, adherence)
+        VALUES (?, ?, ?)
+    ''', (name, week, adherence))
+    db.commit()
+    flash(f'Progress saved for {name}', 'success')
+    return redirect(url_for('get_client', name=name))
 
 
 # API Endpoints
@@ -178,7 +239,18 @@ def api_metrics():
 
 @app.route('/api/clients')
 def api_clients():
-    return jsonify(clients)
+    db = get_db()
+    clients = db.execute('SELECT * FROM clients').fetchall()
+    return jsonify([dict(c) for c in clients])
+
+
+@app.route('/api/clients/<name>')
+def api_client(name):
+    db = get_db()
+    client = db.execute('SELECT * FROM clients WHERE name = ?', (name,)).fetchone()
+    if not client:
+        return jsonify({"error": "Client not found"}), 404
+    return jsonify(dict(client))
 
 
 @app.route('/api/calculate-calories', methods=['POST'])
@@ -192,4 +264,5 @@ def calculate_calories():
 
 
 if __name__ == '__main__':
+    init_db()
     app.run(debug=True, host='0.0.0.0', port=5000)
