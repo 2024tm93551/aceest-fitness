@@ -11,8 +11,13 @@ pipeline {
         stage('Setup') {
             steps {
                 sh '''
-                    python3 --version
-                    python3 -m venv venv
+                    # Check Python version (try python3 first, then python)
+                    python3 --version || python --version
+                    
+                    # Create virtual environment
+                    python3 -m venv venv || python -m venv venv
+                    
+                    # Activate and install dependencies
                     . venv/bin/activate
                     pip install --upgrade pip
                     pip install -r requirements.txt
