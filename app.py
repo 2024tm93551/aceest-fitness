@@ -1,4 +1,6 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
+from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, Response
+import csv
+import io
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'aceest-fitness-secret-key'
@@ -104,7 +106,6 @@ def client_profile():
             flash('Name and Program are required', 'error')
             return redirect(url_for('client_profile'))
         
-        # Calculate calories
         factor = PROGRAMS.get(program_id, {}).get('factor', 25)
         calories = int(weight * factor) if weight else 0
         
@@ -124,6 +125,38 @@ def client_profile():
     return render_template('client.html', programs=PROGRAMS)
 
 
+@app.route('/clients')
+def clients_list():
+    return render_template('clients.html', clients=clients, programs=PROGRAMS)
+
+
+@app.route('/clients/export')
+def export_clients_csv():
+    if not clients:
+        flash('No clients to export', 'error')
+        return redirect(url_for('clients_list'))
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Name', 'Age', 'Weight', 'Program', 'Adherence', 'Calories'])
+    for client in clients:
+        writer.writerow([
+            client['name'],
+            client['age'],
+            client['weight'],
+            client['program_name'],
+            client['adherence'],
+            client['calories']
+        ])
+    
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=clients.csv'}
+    )
+
+
 # API Endpoints
 @app.route('/api/programs')
 def api_programs():
@@ -141,6 +174,11 @@ def api_program_detail(program_id):
 @app.route('/api/metrics')
 def api_metrics():
     return jsonify(GYM_METRICS)
+
+
+@app.route('/api/clients')
+def api_clients():
+    return jsonify(clients)
 
 
 @app.route('/api/calculate-calories', methods=['POST'])
