@@ -1,10 +1,15 @@
 pipeline {
-    agent any
-    
+    agent {
+        docker {
+            image 'python:3.11'
+            args '-u root'
+        }
+    }
+
     environment {
         DOCKER_IMAGE = 'aceest-fitness'
     }
-    
+
     stages {
 
         stage('Checkout') {
@@ -18,16 +23,9 @@ pipeline {
             steps {
                 echo 'Setting up Python environment...'
                 sh '''
-                    # Display Python version
-                    python3 --version || python --version
-                    
-                    # Create virtual environment
-                    python3 -m venv venv
-                    
-                    # Activate virtual environment
+                    python --version
+                    python -m venv venv
                     . venv/bin/activate
-                    
-                    # Upgrade pip and install dependencies
                     pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
@@ -50,7 +48,7 @@ pipeline {
                 echo 'Compiling Python files...'
                 sh '''
                     . venv/bin/activate
-                    python3 -m py_compile app.py
+                    python -m py_compile app.py
                 '''
             }
         }
@@ -74,7 +72,7 @@ pipeline {
             steps {
                 echo 'Building Docker image...'
                 sh '''
-                    which docker && docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} . || echo "Docker not available - skipping image build"
+                    docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} . || echo "Docker not available - skipping build"
                 '''
             }
         }
@@ -88,7 +86,7 @@ pipeline {
             echo 'Pipeline failed!'
         }
         always {
-            cleanWs(cleanWhenNotBuilt: false, deleteDirs: true, disableDeferredWipeout: true, notFailBuild: true)
+            cleanWs()
         }
     }
 }
