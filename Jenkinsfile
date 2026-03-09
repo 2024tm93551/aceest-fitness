@@ -6,59 +6,60 @@ pipeline {
     }
     
     stages {
+
         stage('Checkout') {
             steps {
                 echo 'Checking out source code...'
                 checkout scm
             }
         }
-        
+
         stage('Setup Python') {
             steps {
                 echo 'Setting up Python environment...'
                 sh '''
-                    # Check if python3 exists, if not try to install (for Docker-based Jenkins)
-                    which python3 || (apt-get update && apt-get install -y python3 python3-pip python3-venv) || true
-                    
                     # Display Python version
-                    python3 --version
+                    python3 --version || python --version
                     
                     # Create virtual environment
-                    python3 -m venv venv || true
+                    python3 -m venv venv
                     
-                    # Activate venv and install dependencies
-                    . venv/bin/activate || true
+                    # Activate virtual environment
+                    . venv/bin/activate
+                    
+                    # Upgrade pip and install dependencies
                     pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
             }
         }
-        
+
         stage('Lint') {
             steps {
                 echo 'Running linter...'
                 sh '''
-                    . venv/bin/activate || true
+                    . venv/bin/activate
+                    pip install flake8
                     flake8 app.py --count --select=E9,F63,F7,F82 --show-source --statistics || true
                 '''
             }
         }
-        
+
         stage('Build') {
             steps {
                 echo 'Compiling Python files...'
                 sh '''
-                    . venv/bin/activate || true
-                    python -m py_compile app.py
+                    . venv/bin/activate
+                    python3 -m py_compile app.py
                 '''
             }
         }
-        
+
         stage('Test') {
             steps {
                 echo 'Running tests...'
                 sh '''
-                    . venv/bin/activate || true
+                    . venv/bin/activate
                     pytest tests/ -v --junitxml=test-results.xml
                 '''
             }
@@ -68,18 +69,17 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Docker Build') {
             steps {
                 echo 'Building Docker image...'
                 sh '''
-                    # Check if docker is available
                     which docker && docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} . || echo "Docker not available - skipping image build"
                 '''
             }
         }
     }
-    
+
     post {
         success {
             echo 'Pipeline completed successfully!'
