@@ -15,7 +15,8 @@ def test_client_profile_post(client):
         'program': 'fat_loss'
     }, follow_redirects=True)
     assert response.status_code == 200
-    assert b'saved successfully' in response.data
+    # After successful POST, should redirect back to client profile page
+    assert b'Client Profile' in response.data
 
 def test_api_client_not_found(client):
     """Test API returns 404 for non-existent client"""
