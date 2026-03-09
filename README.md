@@ -77,7 +77,7 @@ docker run -p 5000:5000 aceest-fitness
 ## CI/CD Pipeline
 
 ### GitHub Actions
-- **Trigger**: Push to `main`/`develop` or Pull Request to `main`
+- **Trigger**: Push to `master`/`develop` or Pull Request to `master`
 - **Stages**:
   1. Lint with flake8
   2. Run pytest suite
