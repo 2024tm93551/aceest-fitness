@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Programs - ACEest Fitness{% endblock %}
+{% block content %}
+<h2 style="margin-bottom: 20px;">Fitness Programs</h2>
+{% for key, program in programs.items() %}
+<div class="card" style="border-left-color: {{ program.color }};">
+    <h3 style="color: {{ program.color }};">{{ program.name }}</h3>
+    <p><strong>Target Calories:</strong> {{ program.diet.target_calories }} kcal</p>
+    <a href="/programs/{{ key }}" class="btn">View Full Program</a>
+</div>
+{% endfor %}
+{% endblock %}

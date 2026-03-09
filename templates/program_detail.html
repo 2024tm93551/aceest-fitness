@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}{{ program.name }} - ACEest Fitness{% endblock %}
+{% block content %}
+<h2 style="color: {{ program.color }};">{{ program.name }}</h2>
+<div class="card">
+    <h3>Weekly Workout Chart</h3>
+    {% for day, workout in program.workout.items() %}
+    <p><strong style="color: {{ program.color }};">{{ day|capitalize }}:</strong> {{ workout }}</p>
+    {% endfor %}
+</div>
+<div class="card">
+    <h3>Daily Nutrition Plan</h3>
+    <p><strong>Breakfast:</strong> {{ program.diet.breakfast }}</p>
+    <p><strong>Lunch:</strong> {{ program.diet.lunch }}</p>
+    <p><strong>Dinner:</strong> {{ program.diet.dinner }}</p>
+    <p style="margin-top: 15px; color: #d4af37;"><strong>Target: {{ program.diet.target_calories }} kcal</strong></p>
+</div>
+<a href="/programs" class="btn" style="background-color: #555; color: #fff;">Back</a>
+{% endblock %}

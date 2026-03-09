@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Home - ACEest Fitness{% endblock %}
+{% block content %}
+<h2 style="margin-bottom: 20px;">Welcome to ACEest Fitness & Gym</h2>
+<div class="card">
+    <h3>Our Programs</h3>
+    <ul style="margin: 15px 0; padding-left: 20px;">
+        {% for key, program in programs.items() %}
+        <li style="margin: 10px 0;">
+            <strong style="color: {{ program.color }};">{{ program.name }}</strong>
+            - <a href="/programs/{{ key }}" class="btn" style="padding: 5px 10px;">View</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+<div class="card">
+    <h3>Gym Metrics</h3>
+    <div class="metrics-box">
+        <p>CAPACITY: {{ metrics.capacity }} Users</p>
+        <p>AREA: {{ metrics.area_sqft }} sq ft</p>
+        <p>BREAK-EVEN: {{ metrics.break_even_members }} Members</p>
+    </div>
+</div>
+{% endblock %}

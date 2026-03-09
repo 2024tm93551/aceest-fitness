@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ACEest Fitness & Gym{% endblock %}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; background-color: #1a1a1a; color: #ffffff; min-height: 100vh; }
+        header { background-color: #d4af37; padding: 20px; text-align: center; }
+        header h1 { color: #000000; font-size: 2rem; }
+        nav { background-color: #333; padding: 10px; }
+        nav a { color: #d4af37; text-decoration: none; margin: 0 15px; font-weight: bold; }
+        nav a:hover { color: #fff; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .card { background-color: #2a2a2a; border-radius: 10px; padding: 20px; margin: 15px 0; border-left: 4px solid #d4af37; }
+        .card h3 { color: #d4af37; margin-bottom: 10px; }
+        .btn { background-color: #d4af37; color: #000; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; margin-top: 10px; }
+        .btn:hover { background-color: #b8962e; }
+        footer { background-color: #333; text-align: center; padding: 15px; margin-top: 30px; }
+        .metrics-box { background-color: #333; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; }
+    </style>
+</head>
+<body>
+    <header><h1>ACEest FUNCTIONAL FITNESS</h1></header>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/programs">Programs</a>
+    </nav>
+    <div class="container">{% block content %}{% endblock %}</div>
+    <footer><p>&copy; 2024 ACEest Fitness & Gym</p></footer>
+</body>
+</html>
