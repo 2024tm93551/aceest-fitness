@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Progress Chart - {{ client_name }}{% endblock %}
+{% block content %}
+<h2 style="margin-bottom: 20px;">Progress Chart: {{ client_name }}</h2>
+
+{% if progress %}
+<div class="card">
+    <canvas id="progressChart" width="800" height="400"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('progressChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: {{ progress | map(attribute='week') | list | tojson }},
+        datasets: [{
+            label: 'Adherence %',
+            data: {{ progress | map(attribute='adherence') | list | tojson }},
+            borderColor: '#d4af37',
+            backgroundColor: 'rgba(212, 175, 55, 0.2)',
+            tension: 0.1,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true, max: 100 }
+        }
+    }
+});
+</script>
+{% else %}
+<div class="card"><p>No progress data available.</p></div>
+{% endif %}
+
+<a href="/client/{{ client_name }}" class="btn" style="background-color: #555; color: #fff;">Back</a>
+{% endblock %}

@@ -218,6 +218,18 @@ def save_progress(name):
     return redirect(url_for('get_client', name=name))
 
 
+@app.route('/progress/<name>/chart')
+def progress_chart(name):
+    db = get_db()
+    progress = db.execute('''
+        SELECT week, adherence FROM progress 
+        WHERE client_name = ? ORDER BY id
+    ''', (name,)).fetchall()
+    return render_template('progress_chart.html', 
+                          client_name=name, 
+                          progress=[dict(p) for p in progress])
+
+
 # API Endpoints
 @app.route('/api/programs')
 def api_programs():
@@ -251,6 +263,16 @@ def api_client(name):
     if not client:
         return jsonify({"error": "Client not found"}), 404
     return jsonify(dict(client))
+
+
+@app.route('/api/progress/<name>')
+def api_progress(name):
+    db = get_db()
+    progress = db.execute('''
+        SELECT week, adherence FROM progress 
+        WHERE client_name = ? ORDER BY id
+    ''', (name,)).fetchall()
+    return jsonify([dict(p) for p in progress])
 
 
 @app.route('/api/calculate-calories', methods=['POST'])
