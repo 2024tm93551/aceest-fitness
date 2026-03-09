@@ -19,13 +19,10 @@ pipeline {
             }
         }
 
-        stage('Setup Python') {
+        stage('Install Dependencies') {
             steps {
-                echo 'Setting up Python environment...'
                 sh '''
                     python --version
-                    python -m venv venv
-                    . venv/bin/activate
                     pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
@@ -34,9 +31,7 @@ pipeline {
 
         stage('Lint') {
             steps {
-                echo 'Running linter...'
                 sh '''
-                    . venv/bin/activate
                     pip install flake8
                     flake8 app.py --count --select=E9,F63,F7,F82 --show-source --statistics || true
                 '''
@@ -45,9 +40,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                echo 'Compiling Python files...'
                 sh '''
-                    . venv/bin/activate
                     python -m py_compile app.py
                 '''
             }
@@ -55,9 +48,8 @@ pipeline {
 
         stage('Test') {
             steps {
-                echo 'Running tests...'
                 sh '''
-                    . venv/bin/activate
+                    pip install pytest
                     pytest tests/ -v --junitxml=test-results.xml
                 '''
             }
@@ -70,9 +62,8 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                echo 'Building Docker image...'
                 sh '''
-                    docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} . || echo "Docker not available - skipping build"
+                    docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} . || echo "Docker build skipped"
                 '''
             }
         }
