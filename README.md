@@ -130,7 +130,7 @@ This project follows semantic commit messages:
 
 ## Author
 
-[Your Name] - BITS Pilani DevOps Assignment
+Thivyata - 2024tm93551
 
 ## License
 
