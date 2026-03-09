@@ -1,33 +1,24 @@
 pipeline {
     agent any
     
-    environment {
-        DOCKER_IMAGE = 'aceest-fitness'
-    }
-    
     stages {
         stage('Checkout') {
             steps {
-                echo 'Checking out source code...'
                 checkout scm
             }
         }
         
-        stage('Setup Python') {
+        stage('Setup') {
             steps {
-                echo 'Setting up Python environment...'
                 sh '''
-                    # Check if python3 exists, if not try to install (for Docker-based Jenkins)
-                    which python3 || (apt-get update && apt-get install -y python3 python3-pip python3-venv) || true
-                    
-                    # Display Python version
-                    python3 --version
+                    # Check Python version (try python3 first, then python)
+                    python3 --version || python --version
                     
                     # Create virtual environment
-                    python3 -m venv venv || true
+                    python3 -m venv venv || python -m venv venv
                     
-                    # Activate venv and install dependencies
-                    . venv/bin/activate || true
+                    # Activate and install dependencies
+                    . venv/bin/activate
                     pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
@@ -36,19 +27,17 @@ pipeline {
         
         stage('Lint') {
             steps {
-                echo 'Running linter...'
                 sh '''
-                    . venv/bin/activate || true
-                    flake8 app.py --count --select=E9,F63,F7,F82 --show-source --statistics || true
+                    . venv/bin/activate
+                    flake8 app.py --count --select=E9,F63,F7,F82 --show-source --statistics
                 '''
             }
         }
         
         stage('Build') {
             steps {
-                echo 'Compiling Python files...'
                 sh '''
-                    . venv/bin/activate || true
+                    . venv/bin/activate
                     python -m py_compile app.py
                 '''
             }
@@ -56,25 +45,9 @@ pipeline {
         
         stage('Test') {
             steps {
-                echo 'Running tests...'
                 sh '''
-                    . venv/bin/activate || true
-                    pytest tests/ -v --junitxml=test-results.xml
-                '''
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: 'test-results.xml'
-                }
-            }
-        }
-        
-        stage('Docker Build') {
-            steps {
-                echo 'Building Docker image...'
-                sh '''
-                    # Check if docker is available
-                    which docker && docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} . || echo "Docker not available - skipping image build"
+                    . venv/bin/activate
+                    pytest tests/ -v
                 '''
             }
         }
@@ -87,8 +60,6 @@ pipeline {
         failure {
             echo 'Pipeline failed!'
         }
-        always {
-            cleanWs(cleanWhenNotBuilt: false, deleteDirs: true, disableDeferredWipeout: true, notFailBuild: true)
-        }
     }
 }
+
