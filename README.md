@@ -131,6 +131,7 @@ This project follows semantic commit messages:
 ## Author
 
 Thivyata - 2024tm93551
+
 ## License
 
 Educational use only.
