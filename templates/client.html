@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Client Profile - ACEest Fitness{% endblock %}
+{% block content %}
+<h2 style="margin-bottom: 20px;">Client Profile</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="card" style="border-left-color: {% if category == 'error' %}#e74c3c{% else %}#2ecc71{% endif %};">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<div class="card">
+    <h3>Register Client</h3>
+    <form method="POST" action="/client">
+        <div style="margin: 10px 0;">
+            <label>Name:</label><br>
+            <input type="text" name="name" required class="form-input">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Age:</label><br>
+            <input type="number" name="age" class="form-input">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Weight (kg):</label><br>
+            <input type="number" name="weight" step="0.1" id="weight" class="form-input">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Program:</label><br>
+            <select name="program" id="program" required class="form-input">
+                <option value="">Select Program</option>
+                {% for key, prog in programs.items() %}
+                <option value="{{ key }}">{{ prog.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Weekly Adherence (%):</label><br>
+            <input type="range" name="adherence" min="0" max="100" value="0" id="adherence" style="width: 100%; max-width: 300px;">
+            <span id="adherence-value">0%</span>
+        </div>
+        <div style="margin: 15px 0;">
+            <p style="color: #d4af37;"><strong>Estimated Calories: <span id="calories">--</span> kcal</strong></p>
+        </div>
+        <button type="submit" class="btn">Save Client</button>
+    </form>
+</div>
+
+<script>
+document.getElementById('adherence').addEventListener('input', function() {
+    document.getElementById('adherence-value').textContent = this.value + '%';
+});
+
+function calculateCalories() {
+    const weight = parseFloat(document.getElementById('weight').value) || 0;
+    const program = document.getElementById('program').value;
+    if (weight > 0 && program) {
+        fetch('/api/calculate-calories', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({weight: weight, program: program})
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('calories').textContent = data.calories;
+        });
+    }
+}
+
+document.getElementById('weight').addEventListener('input', calculateCalories);
+document.getElementById('program').addEventListener('change', calculateCalories);
+</script>
+{% endblock %}

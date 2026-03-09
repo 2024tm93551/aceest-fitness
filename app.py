@@ -1,9 +1,9 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'aceest-fitness-secret-key'
 
-# Program Data (from v1.0)
+# Program Data
 PROGRAMS = {
     "fat_loss": {
         "id": "fat_loss",
@@ -21,7 +21,8 @@ PROGRAMS = {
             "dinner": "Fish Curry + Millet Roti",
             "target_calories": 2000
         },
-        "color": "#e74c3c"
+        "color": "#e74c3c",
+        "factor": 22
     },
     "muscle_gain": {
         "id": "muscle_gain",
@@ -40,7 +41,8 @@ PROGRAMS = {
             "dinner": "Mutton Curry + Jeera Rice",
             "target_calories": 3200
         },
-        "color": "#2ecc71"
+        "color": "#2ecc71",
+        "factor": 35
     },
     "beginner": {
         "id": "beginner",
@@ -56,7 +58,8 @@ PROGRAMS = {
             "target_calories": 2200,
             "protein_target": "120g/day"
         },
-        "color": "#3498db"
+        "color": "#3498db",
+        "factor": 26
     }
 }
 
@@ -65,6 +68,9 @@ GYM_METRICS = {
     "area_sqft": 10000,
     "break_even_members": 250
 }
+
+# In-memory client storage
+clients = []
 
 
 @app.route('/')
@@ -85,6 +91,40 @@ def program_detail(program_id):
     return render_template('program_detail.html', program=program)
 
 
+@app.route('/client', methods=['GET', 'POST'])
+def client_profile():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        age = request.form.get('age', type=int)
+        weight = request.form.get('weight', type=float)
+        program_id = request.form.get('program')
+        adherence = request.form.get('adherence', type=int, default=0)
+        
+        if not name or not program_id:
+            flash('Name and Program are required', 'error')
+            return redirect(url_for('client_profile'))
+        
+        # Calculate calories
+        factor = PROGRAMS.get(program_id, {}).get('factor', 25)
+        calories = int(weight * factor) if weight else 0
+        
+        client = {
+            'name': name,
+            'age': age,
+            'weight': weight,
+            'program': program_id,
+            'program_name': PROGRAMS[program_id]['name'],
+            'adherence': adherence,
+            'calories': calories
+        }
+        clients.append(client)
+        flash(f'Client {name} saved successfully! Adherence: {adherence}%', 'success')
+        return redirect(url_for('client_profile'))
+    
+    return render_template('client.html', programs=PROGRAMS)
+
+
+# API Endpoints
 @app.route('/api/programs')
 def api_programs():
     return jsonify(PROGRAMS)
@@ -101,6 +141,16 @@ def api_program_detail(program_id):
 @app.route('/api/metrics')
 def api_metrics():
     return jsonify(GYM_METRICS)
+
+
+@app.route('/api/calculate-calories', methods=['POST'])
+def calculate_calories():
+    data = request.get_json()
+    weight = data.get('weight', 0)
+    program_id = data.get('program')
+    factor = PROGRAMS.get(program_id, {}).get('factor', 25)
+    calories = int(weight * factor) if weight else 0
+    return jsonify({'calories': calories})
 
 
 if __name__ == '__main__':
