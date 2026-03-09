@@ -2,6 +2,7 @@ from flask import Flask, render_template, jsonify, request, redirect, url_for, f
 import sqlite3
 import csv
 import io
+from datetime import datetime, date
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'aceest-fitness-secret-key'
@@ -96,9 +97,12 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT UNIQUE,
                 age INTEGER,
+                height REAL,
                 weight REAL,
                 program TEXT,
-                calories INTEGER
+                calories INTEGER,
+                target_weight REAL,
+                target_adherence INTEGER
             )
         ''')
         db.execute('''
@@ -107,6 +111,26 @@ def init_db():
                 client_name TEXT,
                 week TEXT,
                 adherence INTEGER
+            )
+        ''')
+        db.execute('''
+            CREATE TABLE IF NOT EXISTS workouts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                client_name TEXT,
+                date TEXT,
+                workout_type TEXT,
+                duration_min INTEGER,
+                notes TEXT
+            )
+        ''')
+        db.execute('''
+            CREATE TABLE IF NOT EXISTS metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                client_name TEXT,
+                date TEXT,
+                weight REAL,
+                waist REAL,
+                bodyfat REAL
             )
         ''')
         db.commit()
@@ -135,6 +159,7 @@ def client_profile():
     if request.method == 'POST':
         name = request.form.get('name')
         age = request.form.get('age', type=int)
+        height = request.form.get('height', type=float)
         weight = request.form.get('weight', type=float)
         program_id = request.form.get('program')
         
@@ -148,9 +173,9 @@ def client_profile():
         db = get_db()
         try:
             db.execute('''
-                INSERT OR REPLACE INTO clients (name, age, weight, program, calories)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (name, age, weight, program_id, calories))
+                INSERT OR REPLACE INTO clients (name, age, height, weight, program, calories)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (name, age, height, weight, program_id, calories))
             db.commit()
             flash(f'Client {name} saved successfully!', 'success')
         except Exception as e:
@@ -189,10 +214,10 @@ def export_clients_csv():
     
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(['Name', 'Age', 'Weight', 'Program', 'Calories'])
+    writer.writerow(['Name', 'Age', 'Height', 'Weight', 'Program', 'Calories'])
     for client in clients:
         prog_name = PROGRAMS.get(client['program'], {}).get('name', client['program'])
-        writer.writerow([client['name'], client['age'], client['weight'], prog_name, client['calories']])
+        writer.writerow([client['name'], client['age'], client['height'], client['weight'], prog_name, client['calories']])
     
     output.seek(0)
     return Response(
@@ -204,7 +229,6 @@ def export_clients_csv():
 
 @app.route('/progress/<name>', methods=['POST'])
 def save_progress(name):
-    from datetime import datetime
     adherence = request.form.get('adherence', type=int, default=0)
     week = datetime.now().strftime("Week %U - %Y")
     
@@ -228,6 +252,55 @@ def progress_chart(name):
     return render_template('progress_chart.html', 
                           client_name=name, 
                           progress=[dict(p) for p in progress])
+
+
+@app.route('/workout/<name>', methods=['GET', 'POST'])
+def log_workout(name):
+    if request.method == 'POST':
+        workout_date = request.form.get('date', date.today().isoformat())
+        workout_type = request.form.get('type')
+        duration = request.form.get('duration', type=int)
+        notes = request.form.get('notes', '')
+        
+        db = get_db()
+        db.execute('''
+            INSERT INTO workouts (client_name, date, workout_type, duration_min, notes)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (name, workout_date, workout_type, duration, notes))
+        db.commit()
+        flash('Workout logged successfully!', 'success')
+        return redirect(url_for('get_client', name=name))
+    
+    return render_template('log_workout.html', client_name=name)
+
+
+@app.route('/workouts/<name>')
+def workout_history(name):
+    db = get_db()
+    workouts = db.execute('''
+        SELECT * FROM workouts WHERE client_name = ? ORDER BY date DESC
+    ''', (name,)).fetchall()
+    return render_template('workout_history.html', client_name=name, workouts=[dict(w) for w in workouts])
+
+
+@app.route('/metrics/<name>', methods=['GET', 'POST'])
+def log_metrics(name):
+    if request.method == 'POST':
+        metric_date = request.form.get('date', date.today().isoformat())
+        weight = request.form.get('weight', type=float)
+        waist = request.form.get('waist', type=float)
+        bodyfat = request.form.get('bodyfat', type=float)
+        
+        db = get_db()
+        db.execute('''
+            INSERT INTO metrics (client_name, date, weight, waist, bodyfat)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (name, metric_date, weight, waist, bodyfat))
+        db.commit()
+        flash('Metrics logged successfully!', 'success')
+        return redirect(url_for('get_client', name=name))
+    
+    return render_template('log_metrics.html', client_name=name)
 
 
 # API Endpoints
@@ -273,6 +346,28 @@ def api_progress(name):
         WHERE client_name = ? ORDER BY id
     ''', (name,)).fetchall()
     return jsonify([dict(p) for p in progress])
+
+
+@app.route('/api/bmi/<name>')
+def calculate_bmi(name):
+    db = get_db()
+    client = db.execute('SELECT height, weight FROM clients WHERE name = ?', (name,)).fetchone()
+    if not client or not client['height'] or not client['weight']:
+        return jsonify({"error": "Height and weight required"}), 400
+    
+    height_m = client['height'] / 100
+    bmi = round(client['weight'] / (height_m * height_m), 1)
+    
+    if bmi < 18.5:
+        category = "Underweight"
+    elif bmi < 25:
+        category = "Normal"
+    elif bmi < 30:
+        category = "Overweight"
+    else:
+        category = "Obese"
+    
+    return jsonify({"bmi": bmi, "category": category})
 
 
 @app.route('/api/calculate-calories', methods=['POST'])

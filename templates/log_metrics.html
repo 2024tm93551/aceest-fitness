@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Log Metrics - {{ client_name }}{% endblock %}
+{% block content %}
+<h2>Log Body Metrics: {{ client_name }}</h2>
+<div class="card">
+    <form method="POST">
+        <div style="margin: 10px 0;">
+            <label>Date:</label><br>
+            <input type="date" name="date" required class="form-input">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Weight (kg):</label><br>
+            <input type="number" name="weight" step="0.1" class="form-input">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Waist (cm):</label><br>
+            <input type="number" name="waist" step="0.1" class="form-input">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Body Fat (%):</label><br>
+            <input type="number" name="bodyfat" step="0.1" class="form-input">
+        </div>
+        <button type="submit" class="btn">Save Metrics</button>
+    </form>
+</div>
+<a href="/client/{{ client_name }}" class="btn" style="background-color: #555;">Back</a>
+{% endblock %}

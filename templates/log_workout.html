@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Log Workout - {{ client_name }}{% endblock %}
+{% block content %}
+<h2>Log Workout: {{ client_name }}</h2>
+<div class="card">
+    <form method="POST">
+        <div style="margin: 10px 0;">
+            <label>Date:</label><br>
+            <input type="date" name="date" required class="form-input">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Type:</label><br>
+            <select name="type" required class="form-input">
+                <option value="Strength">Strength</option>
+                <option value="Hypertrophy">Hypertrophy</option>
+                <option value="Conditioning">Conditioning</option>
+                <option value="Mobility">Mobility</option>
+            </select>
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Duration (min):</label><br>
+            <input type="number" name="duration" value="60" class="form-input">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Notes:</label><br>
+            <textarea name="notes" rows="3" class="form-input" style="max-width: 400px;"></textarea>
+        </div>
+        <button type="submit" class="btn">Save Workout</button>
+    </form>
+</div>
+<a href="/client/{{ client_name }}" class="btn" style="background-color: #555;">Back</a>
+{% endblock %}
