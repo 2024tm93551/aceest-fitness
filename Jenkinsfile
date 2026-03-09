@@ -10,28 +10,40 @@ pipeline {
         
         stage('Setup') {
             steps {
-                sh 'python3 --version || python --version'
-                sh 'pip3 install -r requirements.txt || pip install -r requirements.txt'
+                sh '''
+                    python3 --version
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
             }
         }
         
         stage('Lint') {
             steps {
-                sh 'pip3 install flake8 || pip install flake8'
-                sh 'flake8 app.py --count --select=E9,F63,F7,F82 --show-source --statistics || true'
+                sh '''
+                    . venv/bin/activate
+                    flake8 app.py --count --select=E9,F63,F7,F82 --show-source --statistics
+                '''
             }
         }
         
         stage('Build') {
             steps {
-                sh 'python3 -m py_compile app.py || python -m py_compile app.py'
+                sh '''
+                    . venv/bin/activate
+                    python -m py_compile app.py
+                '''
             }
         }
         
         stage('Test') {
             steps {
-                sh 'pip3 install pytest || pip install pytest'
-                sh 'python3 -m pytest tests/ -v || python -m pytest tests/ -v'
+                sh '''
+                    . venv/bin/activate
+                    pytest tests/ -v
+                '''
             }
         }
     }
@@ -45,3 +57,4 @@ pipeline {
         }
     }
 }
+
