@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-fitness-service
+  labels:
+    app: aceest-fitness
+spec:
+  # NodePort exposes the app on a port on your machine
+  # so you can access it from the browser when using Minikube
+  type: NodePort
+
+  selector:
+    app: aceest-fitness
+
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80           # Port inside the cluster
+    targetPort: 5000   # Port the Flask app listens on
+    nodePort: 30080    # Port you will open in your browser (30000-32767)

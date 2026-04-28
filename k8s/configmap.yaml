@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aceest-config
+  labels:
+    app: aceest-fitness
+data:
+  FLASK_ENV: "production"
+  APP_NAME: "ACEest Fitness and Gym"
+  APP_PORT: "5000"
