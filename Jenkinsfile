@@ -91,7 +91,8 @@ pipeline {
                                 -Dsonar.language=py \
                                 -Dsonar.python.version=3.11 \
                                 -Dsonar.exclusions=**/venv/**,**/__pycache__/** \
-                                -Dsonar.python.coverage.reportPaths=coverage.xml
+                                -Dsonar.python.coverage.reportPaths=coverage.xml \
+                                -Dsonar.token=${SONAR_AUTH_TOKEN}
                         """
                     }
                 }
