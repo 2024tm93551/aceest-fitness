@@ -2,10 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // -------------------------------------------------------
-        // IMPORTANT: Replace YOUR_DOCKERHUB_USERNAME with your
-        // actual Docker Hub username before running this pipeline
-        // -------------------------------------------------------
         DOCKER_HUB_USER  = '2024tm93551thivyata'
         DOCKER_IMAGE     = 'aceest-fitness'
         DOCKER_HUB_REPO  = "${DOCKER_HUB_USER}/${DOCKER_IMAGE}"
@@ -84,17 +80,20 @@ pipeline {
             steps {
                 echo '=== Stage 6: SonarQube Code Quality Analysis ==='
                 withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        sonar-scanner \
-                            -Dsonar.projectKey=${SONAR_PROJECT} \
-                            -Dsonar.projectName="ACEest Fitness and Gym" \
-                            -Dsonar.projectVersion=2.0 \
-                            -Dsonar.sources=. \
-                            -Dsonar.language=py \
-                            -Dsonar.python.version=3.11 \
-                            -Dsonar.exclusions="**/venv/**,**/__pycache__/**" \
-                            -Dsonar.python.coverage.reportPaths=coverage.xml
-                    '''
+                    script {
+                        def scannerHome = tool 'SonarScanner'
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                                -Dsonar.projectKey=${SONAR_PROJECT} \
+                                -Dsonar.projectName="ACEest Fitness and Gym" \
+                                -Dsonar.projectVersion=2.0 \
+                                -Dsonar.sources=. \
+                                -Dsonar.language=py \
+                                -Dsonar.python.version=3.11 \
+                                -Dsonar.exclusions=**/venv/**,**/__pycache__/** \
+                                -Dsonar.python.coverage.reportPaths=coverage.xml
+                        """
+                    }
                 }
             }
         }
