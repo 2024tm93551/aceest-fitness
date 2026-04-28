@@ -3,9 +3,9 @@ name: ACEest CI/CD Pipeline - Assignment 2
 # Trigger: run on every push to main or develop, and on PRs to main
 on:
   push:
-    branches: [main, develop]
+    branches: [master, develop]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
 
